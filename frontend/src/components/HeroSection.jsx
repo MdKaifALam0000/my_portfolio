@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { FiGithub, FiLinkedin, FiMail } from 'react-icons/fi';
-import myPhoto from '../assets/My_Photo.jpeg';
+import myPhoto from '../assets/My_photo.jpeg';
 
 gsap.registerPlugin(ScrollTrigger);
 
