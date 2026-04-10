@@ -157,12 +157,27 @@ const ProjectCard3D = ({ project }) => {
           <div className="w-full h-full flex flex-col items-center justify-center p-6 relative z-20" style={{ transform: 'translateZ(60px)' }}>
             <p className="text-neonCyan mb-4 font-outfit tracking-widest text-sm font-bold uppercase">{project.title} Demo</p>
             
-            <div className="w-full aspect-video bg-black/60 border border-white/10 rounded-xl flex items-center justify-center relative overflow-hidden group/video cursor-pointer shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-              {/* Optional: Add video tag here, fallback to a play button for now */}
-              <div className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover/video:bg-neonCyan/20 group-hover/video:border-neonCyan transition-all duration-300 transform group-hover/video:scale-110">
-                <FiPlay size={24} className="text-white ml-2 group-hover/video:text-neonCyan transition-colors" />
-              </div>
-              <p className="absolute bottom-4 text-xs font-outfit text-white/40">Demo Video Coming Soon</p>
+            <div className="w-full aspect-video bg-black/60 border border-white/10 rounded-xl flex items-center justify-center relative overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+              {project.videoUrl ? (
+                // ✅ Cloudinary video is available — show native HTML5 player
+                <video
+                  className="w-full h-full object-cover"
+                  src={project.videoUrl}
+                  controls
+                  preload="metadata"
+                  onClick={(e) => e.stopPropagation()} // prevent card flip when clicking video controls
+                >
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                // 🕐 No video yet — show "Coming Soon" placeholder
+                <div className="group/video w-full h-full flex flex-col items-center justify-center cursor-pointer">
+                  <div className="w-16 h-16 rounded-full bg-white/5 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover/video:bg-neonCyan/20 group-hover/video:border-neonCyan transition-all duration-300 transform group-hover/video:scale-110">
+                    <FiPlay size={24} className="text-white ml-2 group-hover/video:text-neonCyan transition-colors" />
+                  </div>
+                  <p className="absolute bottom-4 text-xs font-outfit text-white/40">Demo Video Coming Soon</p>
+                </div>
+              )}
             </div>
 
             <p className="text-center text-lightGrey text-sm mt-6 mb-8 px-4 opacity-80 leading-relaxed">

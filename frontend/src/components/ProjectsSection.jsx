@@ -1,35 +1,45 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiExternalLink, FiGithub } from 'react-icons/fi';
 import ProjectCard3D from './ProjectCard3D';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const ProjectsSection = () => {
   const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    setProjects([
-      { 
-        title: 'CodeMaster', 
-        description: 'A full-stack MERN coding platform designed to enhance problem-solving skills. Features a real-time Monaco Editor, JWT authentication, and an AI-driven assistant integrated with Google Gemini. Includes an admin dashboard and optimized performance using Redis caching.', 
-        technologies: ['React', 'Node.js', 'MongoDB', 'Redis', 'Gemini AI'], 
-        image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=1000',
-        github: 'https://github.com/MdKaifALam0000/CodeMaster',
-        live: 'https://codemaster-frontend.onrender.com/'
-      },
-      { 
-        title: 'StudyNotion', 
-        description: 'A full-stack MERN EdTech platform enabling instructors to create, manage, and monetize courses while providing students with a seamless learning experience through course discovery, enrollment, and progress tracking. Features secure JWT authentication, role-based access control, interactive video-based learning, and integrated payment functionality.', 
-        technologies: ['React', 'Node.js', 'MongoDB', 'Express', 'JWT'], 
-        image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=1000',
-        github: 'https://github.com/MdKaifALam0000/Edtech'
+    const fetchProjects = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/projects`);
+        if (!res.ok) throw new Error('Failed to fetch projects');
+        const data = await res.json();
+
+        // Map DB field names (githubLink/liveLink) to what ProjectCard3D expects (github/live)
+        // videoUrl is included directly from the database ✅
+        const mapped = data.map(p => ({
+          ...p,
+          github: p.githubLink,
+          live: p.liveLink,
+        }));
+
+        setProjects(mapped);
+      } catch (err) {
+        console.error('Error fetching projects:', err);
+        setError('Could not load projects. Is the backend running?');
+      } finally {
+        setLoading(false);
       }
-    ]);
+    };
+
+    fetchProjects();
   }, []);
 
   return (
     <section id="projects" className="min-h-screen py-24 px-6 relative">
       <div className="max-w-6xl mx-auto">
-        <motion.h2 
+        <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -38,19 +48,39 @@ const ProjectsSection = () => {
           <span className="text-neonCyan">03.</span> Featured Projects
         </motion.h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {projects.map((project, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.2 }}
-            >
-              <ProjectCard3D project={project} />
-            </motion.div>
-          ))}
-        </div>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center h-48">
+            <div className="w-10 h-10 border-2 border-neonCyan border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <p className="text-center text-red-400 font-outfit">{error}</p>
+        )}
+
+        {/* Projects Grid */}
+        {!loading && !error && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {projects.map((project, index) => (
+              <motion.div
+                key={project._id || index}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
+              >
+                <ProjectCard3D project={project} />
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && projects.length === 0 && (
+          <p className="text-center text-lightGrey font-outfit">No projects found in the database.</p>
+        )}
       </div>
     </section>
   );
