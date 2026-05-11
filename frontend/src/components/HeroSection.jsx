@@ -16,10 +16,13 @@ const HeroSection = () => {
   const text3Ref = useRef(null);
   const ctaRef = useRef(null);
 
-  // Fallback state to prevent SSR issues or initial render flash
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  // Detect mobile: skip heavy canvas+GSAP animation on touch devices
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   useEffect(() => {
+    // ── Skip all canvas + GSAP work on mobile to prevent scroll breaking ──
+    if (isMobile) return;
     // ---- 1. CANVASS RENDER SETUP ----
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
@@ -94,13 +97,10 @@ const HeroSection = () => {
       onUpdate: () => requestAnimationFrame(render),
     }, 0); // Start at 0
 
-    // B) Profile Image Animation (subtle 3D tilt + scale down)
+    // B) Profile Image Animation (subtle parallax)
     tl.to(profileRef.current, {
-      scale: 0.8,
-      rotateX: 10,
-      rotateY: -20, // Gentle tilt looking inwards
-      opacity: 0.6,
-      filter: 'blur(3px)', // Cinematic blur
+      y: 30,
+      opacity: 0.8,
       duration: 1.1, // Matches total timeline length
       ease: 'power1.inOut'
     }, 0);
@@ -158,8 +158,73 @@ const HeroSection = () => {
     return () => {
       ScrollTrigger.getAll().forEach(t => t.kill());
     };
-  }, []);
+  }, [isMobile]);
 
+  // ─── MOBILE HERO: Simple, clean, no canvas ───────────────────────────────
+  if (isMobile) {
+    return (
+      <section id="hero" className="relative w-full min-h-screen flex flex-col items-center justify-center bg-black px-6 py-24 text-center overflow-hidden">
+        {/* Subtle background glow for mobile */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-neonCyan/10 blur-[100px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-neonPurple/10 blur-[100px] rounded-full pointer-events-none" />
+
+        {/* Profile Image on Mobile */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="w-40 h-48 rounded-sm border border-white/10 overflow-hidden mb-8 relative"
+        >
+          <img src={myPhoto} alt="Profile" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" />
+        </motion.div>
+
+        {/* Text */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-neonCyan font-outfit tracking-widest mb-3 text-sm"
+        >
+          WELCOME TO MY UNIVERSE
+        </motion.p>
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="text-4xl font-bold text-white leading-tight mb-4"
+        >
+          I build <span className="text-transparent bg-clip-text bg-gradient-to-r from-neonCyan to-neonPurple">digital realities</span>.
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="text-lightGrey text-base max-w-sm mx-auto mb-10"
+        >
+          Full-Stack Software Engineer specializing in building cutting-edge, premium web applications.
+        </motion.p>
+
+        {/* CTA Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="flex flex-col gap-4 items-center"
+        >
+          <a href="#projects" className="w-48 text-center px-8 py-3 bg-white text-black font-semibold rounded-sm hover:bg-white/90 transition-all duration-300">
+            View Work
+          </a>
+          <div className="flex gap-4">
+            <a href="https://github.com/MdKaifALam0000" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-sm border border-white/10 hover:bg-white/10 transition-all text-white"><FiGithub size={20}/></a>
+            <a href="https://www.linkedin.com/in/alam-kaif-67b443224/" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-sm border border-white/10 hover:bg-white/10 transition-all text-white"><FiLinkedin size={20}/></a>
+            <a href="mailto:alam.kaif9430@gmail.com" className="p-3 bg-white/5 rounded-sm border border-white/10 hover:bg-white/10 transition-all text-white"><FiMail size={20}/></a>
+          </div>
+        </motion.div>
+      </section>
+    );
+  }
+
+  // ─── DESKTOP HERO: Full canvas + GSAP cinematic experience ────────────────
   return (
     <section 
       id="hero" 
@@ -215,44 +280,30 @@ const HeroSection = () => {
 
           {/* Fixed CTA Buttons that persist for most of scroll */}
           <div ref={ctaRef} className="absolute bottom-[-80px] left-0 flex gap-6 items-center">
-            <a href="#projects" className="px-8 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-lg hover:bg-white hover:text-black hover:border-white transition-all duration-300">
+            <a href="#projects" className="px-8 py-3 bg-white text-black font-semibold rounded-sm hover:bg-white/90 transition-all duration-300">
               View Work
             </a>
             <div className="flex gap-4 items-center">
-              <a href="#" className="p-3 bg-white/5 rounded-full hover:bg-white/20 hover:text-neonCyan transition-all backdrop-blur-sm"><FiGithub size={20} className="text-white"/></a>
-              <a href="#" className="p-3 bg-white/5 rounded-full hover:bg-white/20 hover:text-neonCyan transition-all backdrop-blur-sm"><FiLinkedin size={20} className="text-white"/></a>
-              <a href="#" className="p-3 bg-white/5 rounded-full hover:bg-white/20 hover:text-neonCyan transition-all backdrop-blur-sm"><FiMail size={20} className="text-white"/></a>
+              <a href="https://github.com/MdKaifALam0000" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-sm border border-white/10 hover:bg-white/10 hover:text-white transition-all"><FiGithub size={20} className="text-lightGrey"/></a>
+              <a href="https://www.linkedin.com/in/alam-kaif-67b443224/" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-sm border border-white/10 hover:bg-white/10 hover:text-white transition-all"><FiLinkedin size={20} className="text-lightGrey"/></a>
+              <a href="mailto:alam.kaif9430@gmail.com" className="p-3 bg-white/5 rounded-sm border border-white/10 hover:bg-white/10 hover:text-white transition-all"><FiMail size={20} className="text-lightGrey"/></a>
             </div>
           </div>
         </div>
 
-        {/* Right Col: 3D Profile Frame */}
-        <div className="flex items-center justify-center h-full [perspective:1000px] hidden lg:flex">
+        {/* Right Col: Profile Frame */}
+        <div className="flex items-center justify-center h-full hidden lg:flex">
           <div 
             ref={profileRef}
-            className="relative w-80 h-80 rounded-full border border-white/10 p-2 glass flex items-center justify-center [transform-style:preserve-3d] shadow-[0_0_50px_rgba(0,255,255,0.15)]"
+            className="relative w-80 h-[400px] rounded-sm border border-white/10 p-2 flex items-center justify-center bg-white/5 backdrop-blur-sm"
           >
-            {/* Outer rotating ring */}
-            <motion.div 
-              animate={{ rotate: 360 }} 
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-0 rounded-full border border-dashed border-neonCyan/30"
-            />
-            {/* Inner rotating ring */}
-            <motion.div 
-              animate={{ rotate: -360 }} 
-              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-4 rounded-full border border-neonPurple/40 glass"
-            />
-            
-            {/* Image Mask Engine */}
-            <div className="w-full h-full relative rounded-full overflow-hidden bg-black object-cover z-20">
+            {/* Image Mask */}
+            <div className="w-full h-full relative rounded-sm overflow-hidden bg-black object-cover z-20">
               <img 
                 src={myPhoto} 
                 alt="Profile" 
-                className="w-full h-full object-cover filter contrast-125 saturate-150 absolute top-0 left-0"
+                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500 absolute top-0 left-0"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-neonCyan/20 to-transparent mix-blend-overlay"></div>
             </div>
           </div>
         </div>

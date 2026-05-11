@@ -33,9 +33,9 @@ const SkillsSection = () => {
               viewport={{ once: true }}
               transition={{ delay: index * 0.1, duration: 0.4 }}
               whileHover={{ y: -10, scale: 1.05 }}
-              className="glass p-6 rounded-xl border border-white/5 flex flex-col items-center justify-center gap-4 group cursor-pointer"
+              className="glass p-6 rounded-sm border border-white/5 flex flex-col items-center justify-center gap-4 group cursor-pointer"
             >
-              <div className="w-16 h-16 rounded-full bg-[#0a0726] border border-white/10 flex items-center justify-center group-hover:border-neonCyan transition-all duration-300 shadow-inner">
+              <div className="w-16 h-16 rounded-sm bg-[#0a0726] border border-white/10 flex items-center justify-center group-hover:border-neonCyan transition-all duration-300 shadow-inner">
                 <span className="text-2xl text-neonPurple group-hover:text-neonCyan transition-colors">⚡</span>
               </div>
               <h3 className="text-lg font-bold text-white tracking-wide">{skill.name}</h3>

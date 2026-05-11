@@ -2,8 +2,7 @@ import { motion } from 'framer-motion';
 
 const ExperienceSection = () => {
   const experiences = [
-    { title: 'Senior Engineer', company: 'Tech Corp', year: '2023 - Present', detail: 'Led the core architecture transition to modern microservices, improving load times by 40%. Directed a team of 4 frontend engineers.' },
-    { title: 'Fullstack Developer', company: 'Startup Inc', year: '2021 - 2023', detail: 'Built primary MERN stack platform from ground up. Integrated complex payment gateways and designed scalable MongoDB schemas.' },
+    { title: 'Web dev internship', company: 'Dbert', year: 'Recent', detail: 'Developed modern web applications and designed scalable frontend architectures. Focused on clean, maintainable code and performance optimizations.' },
   ];
 
   return (
@@ -21,16 +20,16 @@ const ExperienceSection = () => {
         {experiences.map((exp, i) => (
           <motion.div 
             key={i}
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -10 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: i * 0.2 }}
+            transition={{ delay: i * 0.1, duration: 0.4, ease: 'easeOut' }}
             className="mb-12 pl-8 relative"
           >
-            <div className="absolute w-4 h-4 rounded-full bg-neonCyan shadow-[0_0_10px_#00f0ff] -left-[9px] top-1"></div>
+            <div className="absolute w-3 h-3 bg-neonCyan -left-[7px] top-1.5"></div>
             <p className="text-neonCyan font-bold tracking-widest text-sm mb-1">{exp.year}</p>
             <h3 className="text-2xl font-bold text-white mt-1">{exp.title} <span className="text-neonPurple">@ {exp.company}</span></h3>
-            <p className="text-lightGrey mt-4 glass p-6 rounded-lg inline-block w-full leading-relaxed">{exp.detail}</p>
+            <p className="text-lightGrey mt-4 glass p-6 rounded-sm inline-block w-full leading-relaxed">{exp.detail}</p>
           </motion.div>
         ))}
       </div>

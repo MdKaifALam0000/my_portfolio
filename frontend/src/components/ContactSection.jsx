@@ -63,7 +63,7 @@ const ContactSection = () => {
           viewport={{ once: true }}
           transition={{ delay: 0.4 }}
           onSubmit={handleSubmit} 
-          className="glass p-8 md:p-12 rounded-2xl flex flex-col gap-6 text-left relative overflow-hidden"
+          className="glass p-8 md:p-12 rounded-sm flex flex-col gap-6 text-left relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-neonCyan/10 blur-[80px] rounded-full pointer-events-none"></div>
           
@@ -74,7 +74,7 @@ const ContactSection = () => {
               required
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
-              className="w-full bg-[#0a0726]/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neonCyan transition-all duration-300"
+              className="w-full bg-[#0a0726]/50 border border-white/10 rounded-sm px-4 py-3 text-white focus:outline-none focus:border-neonCyan transition-all duration-300"
             />
           </div>
           <div className="relative z-10">
@@ -84,7 +84,7 @@ const ContactSection = () => {
               required
               value={formData.email}
               onChange={e => setFormData({...formData, email: e.target.value})}
-              className="w-full bg-[#0a0726]/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neonCyan transition-all duration-300"
+              className="w-full bg-[#0a0726]/50 border border-white/10 rounded-sm px-4 py-3 text-white focus:outline-none focus:border-neonCyan transition-all duration-300"
             />
           </div>
           <div className="relative z-10">
@@ -94,11 +94,11 @@ const ContactSection = () => {
               required
               value={formData.message}
               onChange={e => setFormData({...formData, message: e.target.value})}
-              className="w-full bg-[#0a0726]/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neonCyan transition-all duration-300 resize-none"
+              className="w-full bg-[#0a0726]/50 border border-white/10 rounded-sm px-4 py-3 text-white focus:outline-none focus:border-neonCyan transition-all duration-300 resize-none"
             ></textarea>
           </div>
           
-          <button type="submit" className="relative z-10 mt-4 w-full py-4 bg-transparent text-neonCyan border border-neonCyan hover:bg-neonCyan hover:text-[#030014] font-bold tracking-widest rounded-lg transition-all duration-300 overflow-hidden group">
+          <button type="submit" className="relative z-10 mt-4 w-full py-4 bg-transparent text-neonCyan border border-neonCyan hover:bg-neonCyan hover:text-[#030014] font-bold tracking-widest rounded-sm transition-all duration-300 overflow-hidden group">
             <span className="relative z-20">{status || 'SEND MESSAGE'}</span>
             <div className="absolute inset-0 h-full w-0 bg-neonCyan group-hover:w-full transition-all duration-300 z-10"></div>
           </button>

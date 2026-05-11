@@ -47,12 +47,11 @@ const ProjectCard3D = ({ project }) => {
 
   return (
     <div 
-      className="w-full max-w-sm mx-auto h-[480px] rounded-2xl relative"
-      style={{ perspective: '1200px' }} // Perspective required for realistic 3D space
+      className="w-full max-w-sm mx-auto h-[440px] sm:h-[480px] rounded-sm relative"
+      style={{ perspective: '1200px' }}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={handleMouseLeave}
-      // Added tap support for mobile interaction
       onClick={() => setIsHovered(!isHovered)}
     >
       <motion.div
@@ -79,7 +78,7 @@ const ProjectCard3D = ({ project }) => {
           height: '100%',
           position: 'relative'
         }}
-        className="w-full h-full rounded-2xl shadow-2xl relative"
+        className="w-full h-full rounded-sm shadow-2xl relative"
       >
         {/* ================= FRONT FACE ================= */}
         <motion.div
@@ -87,13 +86,13 @@ const ProjectCard3D = ({ project }) => {
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
           }}
-          className="absolute inset-0 w-full h-full glass border border-white/10 rounded-2xl p-6 flex flex-col justify-between overflow-hidden bg-gradient-to-br from-black/80 to-neonPurple/10 backdrop-blur-xl"
+          className="absolute inset-0 w-full h-full glass border border-white/10 rounded-sm p-6 flex flex-col justify-between overflow-hidden bg-gradient-to-br from-black/80 to-neonPurple/10 backdrop-blur-xl"
         >
           {/* Subtle Glow & Lighting Effect (Dynamic shadow) */}
           <div className="absolute -inset-1 opacity-20 bg-gradient-to-r from-neonCyan via-neonPurple to-neonCyan blur-xl -z-10 animate-pulse" />
           
           {/* Top image section with depth illustration */}
-          <div className="w-full h-40 rounded-xl overflow-hidden mb-4 relative" style={{ transform: 'translateZ(30px)' }}>
+          <div className="w-full h-40 rounded-sm overflow-hidden mb-4 relative" style={{ transform: 'translateZ(30px)' }}>
             <div className="absolute inset-0 bg-neonPurple/20 mix-blend-multiply z-10" />
             <img 
               src={project.image} 
@@ -111,12 +110,12 @@ const ProjectCard3D = ({ project }) => {
             
             <ul className="flex flex-wrap gap-2 mb-4">
               {project.technologies.slice(0, 3).map((tech, i) => (
-                <li key={i} className="text-xs font-outfit px-2 py-1 bg-white/5 rounded-md text-neonPurple border border-white/5">
+                <li key={i} className="text-xs font-outfit px-2 py-1 bg-white/5 rounded-sm text-neonPurple border border-white/5">
                   {tech}
                 </li>
               ))}
               {project.technologies.length > 3 && (
-                <li className="text-xs font-outfit px-2 py-1 bg-white/5 rounded-md text-lightGrey border border-white/5">
+                <li className="text-xs font-outfit px-2 py-1 bg-white/5 rounded-sm text-lightGrey border border-white/5">
                   +{project.technologies.length - 3}
                 </li>
               )}
@@ -125,15 +124,19 @@ const ProjectCard3D = ({ project }) => {
           
           {/* Front Face Footer */}
           <div className="flex items-center justify-between mt-auto" style={{ transform: 'translateZ(50px)' }}>
-            <p className="text-xs text-white/50 animate-pulse">Hover to view demo</p>
+            <p className="text-xs text-white/50 animate-pulse">
+              <span className="hidden md:inline">Hover</span>
+              <span className="inline md:hidden">Tap</span>
+              {' '}to view demo
+            </p>
             <div className="flex gap-3">
               {project.github && (
-                <a href={project.github} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="p-2 rounded-full bg-white/5 hover:bg-white/20 transition-colors text-white">
+                <a href={project.github} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="p-2 rounded-sm bg-white/5 hover:bg-white/20 transition-colors text-white">
                   <FiGithub size={16} />
                 </a>
               )}
               {project.live && project.live !== '#' && (
-                <a href={project.live} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="p-2 rounded-full bg-white/5 hover:bg-white/20 transition-colors text-white">
+                <a href={project.live} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="p-2 rounded-sm bg-white/5 hover:bg-white/20 transition-colors text-white">
                   <FiExternalLink size={16} />
                 </a>
               )}
@@ -149,7 +152,7 @@ const ProjectCard3D = ({ project }) => {
             WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)'
           }}
-          className="absolute inset-0 w-full h-full glass border border-neonCyan/30 rounded-2xl overflow-hidden bg-[#050505] backdrop-blur-3xl flex flex-col items-center justify-center shadow-[0_0_30px_rgba(0,255,255,0.1)]"
+          className="absolute inset-0 w-full h-full glass border border-neonCyan/30 rounded-sm overflow-hidden bg-[#050505] backdrop-blur-3xl flex flex-col items-center justify-center shadow-[0_0_30px_rgba(0,255,255,0.1)]"
         >
           {/* Back side video container with soft fade-in synchronized with flip */}
           <div className="w-full h-full absolute inset-0 opacity-40 bg-gradient-to-t from-black via-transparent to-black z-10 pointer-events-none" />
@@ -157,7 +160,7 @@ const ProjectCard3D = ({ project }) => {
           <div className="w-full h-full flex flex-col items-center justify-center p-6 relative z-20" style={{ transform: 'translateZ(60px)' }}>
             <p className="text-neonCyan mb-4 font-outfit tracking-widest text-sm font-bold uppercase">{project.title} Demo</p>
             
-            <div className="w-full aspect-video bg-black/60 border border-white/10 rounded-xl flex items-center justify-center relative overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+            <div className="w-full aspect-video bg-black/60 border border-white/10 rounded-sm flex items-center justify-center relative overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
               {project.videoUrl ? (
                 // ✅ Cloudinary video is available — show native HTML5 player
                 <video
@@ -187,12 +190,12 @@ const ProjectCard3D = ({ project }) => {
             {/* Quick Links on Back */}
             <div className="flex gap-4">
               {project.github && (
-                <a href={project.github} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-white text-sm font-outfit">
+                <a href={project.github} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 px-4 py-2 rounded-sm bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-white text-sm font-outfit">
                   <FiGithub size={16} /> Code
                 </a>
               )}
               {project.live && project.live !== '#' && (
-                <a href={project.live} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-neonCyan/20 hover:bg-neonCyan/30 border border-neonCyan/30 transition-colors text-neonCyan text-sm font-outfit">
+                <a href={project.live} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 px-4 py-2 rounded-sm bg-neonCyan/20 hover:bg-neonCyan/30 border border-neonCyan/30 transition-colors text-neonCyan text-sm font-outfit">
                   <FiExternalLink size={16} /> Live App
                 </a>
               )}
