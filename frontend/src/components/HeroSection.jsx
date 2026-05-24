@@ -1,312 +1,393 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { FiGithub, FiLinkedin, FiMail } from 'react-icons/fi';
-import myPhoto from '../assets/My_photo.jpeg';
+import { FiGithub, FiLinkedin, FiMail, FiNavigation } from 'react-icons/fi';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const HeroSection = () => {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
-  const profileRef = useRef(null);
   const text1Ref = useRef(null);
   const text2Ref = useRef(null);
   const text3Ref = useRef(null);
   const ctaRef = useRef(null);
+  const currentFrameRef = useRef(0);
 
   const [imagesLoaded, setImagesLoaded] = useState(false);
-  // Detect mobile: skip heavy canvas+GSAP animation on touch devices
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const [isDragging, setIsDragging] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [frameCount, setFrameCount] = useState(0);
+  const [loadedCountState, setLoadedCountState] = useState(0);
 
+  const dragStartRef = useRef(0);
+  const frameStartRef = useRef(0);
+  const imagesRef = useRef([]);
+  const isInteractedRef = useRef(false);
+
+  // Responsive check
   useEffect(() => {
-    // ── Skip all canvas + GSAP work on mobile to prevent scroll breaking ──
-    if (isMobile) return;
-    // ---- 1. CANVASS RENDER SETUP ----
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // 1. Image Preloading & Initialization
+  useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const context = canvas.getContext('2d');
-    
+
     // Load local frames dynamically using Vite's import.meta.glob
     const frameModules = import.meta.glob('../ezgif-6f4a4af5fdddf08f-jpg/*.jpg', { eager: true, import: 'default' });
-    
-    // Sort paths to ensure sequential order
     const framePaths = Object.keys(frameModules).sort();
-    const frameCount = framePaths.length;
-    
-    // Access the imported standard URL from the Vite glob output
+    const count = framePaths.length;
+    setFrameCount(count);
+
     const currentFrame = index => frameModules[framePaths[index]];
-
     const images = [];
-    const sequence = { frame: 0 };
 
-    // Preload image routine for butter smooth 60fps requestAnimationFrame performance
-    let loadedCount = 0;
-    for (let i = 0; i < frameCount; i++) {
+    let loaded = 0;
+    for (let i = 0; i < count; i++) {
       const img = new Image();
       img.src = currentFrame(i);
       img.onload = () => {
-        loadedCount++;
-        if (loadedCount === 1) {
-          // Set canvas dimensions based on the initial intrinsic native image size 
-          // to ensure perfect aspect ratio before CSS scaling (object-cover)
+        loaded++;
+        setLoadedCountState(loaded);
+        if (loaded === 1) {
           canvas.width = img.naturalWidth;
           canvas.height = img.naturalHeight;
-          // Draw first frame immediately when ready
-          render();
+          renderFrame(0);
         }
-        if (loadedCount === frameCount) {
+        if (loaded === count) {
           setImagesLoaded(true);
         }
       };
       images.push(img);
     }
+    imagesRef.current = images;
 
-    const render = () => {
-      if (images[sequence.frame] && images[sequence.frame].complete) {
+    // Canvas drawing function
+    function renderFrame(index) {
+      if (images[index] && images[index].complete) {
         context.clearRect(0, 0, canvas.width, canvas.height);
-        // Draw the image onto the canvas
-        context.drawImage(images[sequence.frame], 0, 0);
+        context.drawImage(images[index], 0, 0);
       }
-    };
+    }
 
+    // Keep render frame accessible globally within this useEffect scope
+    window.__renderHeroFrame = renderFrame;
 
-    // ---- 2. GSAP SCROLLTRIGGER SETUP ----
+  }, []);
+
+  const renderFrame = (index) => {
+    if (window.__renderHeroFrame) {
+      window.__renderHeroFrame(index);
+    }
+  };
+
+  // 2. GSAP ScrollTrigger Sequence (Desktop Only)
+  useEffect(() => {
+    if (isMobile || !imagesLoaded || frameCount === 0) return;
+
+    const sequence = { frame: 0 };
+
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: containerRef.current,
         pin: true,
-        scrub: 0.5, // 0.5s smoothing effect so it isn't completely rigid
+        scrub: 0.6,
         start: 'top top',
-        // Pin for 4 screens worth of scrolling -> this dictates length of the animation
-        end: '+=400%', 
+        end: '+=250%', // Scroll depth
+        onUpdate: (self) => {
+          // If the user scrolls, set interacted to true to stop idle rotation
+          isInteractedRef.current = true;
+        }
       }
     });
 
-    /**
-     * The timeline sequence is normalized from 0 to 1 time units inside `tl` using position parameters.
-     * We spread out the background frame draw, profile translation, and text swapping carefully.
-     */
-
-    // A) Background Animation - scrub through all frames across the entire duration
+    // Animate car rotation over the scrub timeline
     tl.to(sequence, {
       frame: frameCount - 1,
       snap: 'frame',
       ease: 'none',
-      duration: 1.1, // Matches total text animation length
-      onUpdate: () => requestAnimationFrame(render),
-    }, 0); // Start at 0
-
-    // B) Profile Image Animation (subtle parallax)
-    tl.to(profileRef.current, {
-      y: 30,
-      opacity: 0.8,
-      duration: 1.1, // Matches total timeline length
-      ease: 'power1.inOut'
+      duration: 1.1,
+      onUpdate: () => {
+        currentFrameRef.current = sequence.frame;
+        renderFrame(sequence.frame);
+      },
     }, 0);
 
-    // C) Text Phase 1: "I build digital realities" Fades OUT
+    // Text animations synced with the car rotation phases
+    // Phase 1 (0 to 0.25) is active initially
+
+    // Text Phase 1 Fades Out
     tl.to(text1Ref.current, {
       opacity: 0,
-      y: -50,
+      y: -30,
+      display: 'none',
       duration: 0.2,
       ease: 'power2.inOut',
-    }, 0.1);
+    }, 0.15);
 
-    // D) Text Phase 2: "Crafting immersive experiences" Fades IN then OUT
+    // Text Phase 2 Fades In
     tl.fromTo(text2Ref.current, {
       opacity: 0,
-      y: 50,
+      y: 30,
       display: 'none'
     }, {
       opacity: 1,
       y: 0,
-      display: 'block',
-      duration: 0.2,
+      display: 'flex',
+      duration: 0.25,
       ease: 'power2.out'
-    }, 0.3);
+    }, 0.35);
 
+    // Text Phase 2 Fades Out
     tl.to(text2Ref.current, {
       opacity: 0,
-      y: -50,
+      y: -30,
+      display: 'none',
       duration: 0.2,
       ease: 'power2.inOut'
-    }, 0.5);
+    }, 0.6);
 
-    // E) Text Phase 3: "Building intelligent systems" Fades IN
+    // Text Phase 3 Fades In
     tl.fromTo(text3Ref.current, {
       opacity: 0,
-      y: 50,
+      y: 30,
       display: 'none'
     }, {
       opacity: 1,
       y: 0,
-      display: 'block',
-      duration: 0.2,
+      display: 'flex',
+      duration: 0.25,
       ease: 'power2.out'
-    }, 0.7);
+    }, 0.8);
 
-    // F) Fade out final components for exit transition
-    tl.to([text3Ref.current, ctaRef.current, profileRef.current], {
-      opacity: 0,
-      y: -30,
-      duration: 0.15,
-      ease: 'power1.inOut'
+    // Subtle scale-up/exit zoom of CTA at the very end
+    tl.to(ctaRef.current, {
+      scale: 0.95,
+      opacity: 0.9,
+      duration: 0.15
     }, 0.95);
 
-    // Cleanup triggers on unmount
     return () => {
       ScrollTrigger.getAll().forEach(t => t.kill());
     };
-  }, [isMobile]);
+  }, [isMobile, imagesLoaded, frameCount]);
 
-  // ─── MOBILE HERO: Simple, clean, no canvas ───────────────────────────────
-  if (isMobile) {
-    return (
-      <section id="hero" className="relative w-full min-h-screen flex flex-col items-center justify-center bg-black px-6 py-24 text-center overflow-hidden">
-        {/* Subtle background glow for mobile */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-neonCyan/10 blur-[100px] rounded-full pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-neonPurple/10 blur-[100px] rounded-full pointer-events-none" />
+  // 3. Automatic Idle Rotation (when not scrolling or dragging)
+  useEffect(() => {
+    if (!imagesLoaded || frameCount === 0) return;
 
-        {/* Profile Image on Mobile */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6 }}
-          className="w-40 h-48 rounded-sm border border-white/10 overflow-hidden mb-8 relative"
-        >
-          <img src={myPhoto} alt="Profile" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" />
-        </motion.div>
+    const interval = setInterval(() => {
+      if (isDragging || isInteractedRef.current) return;
+      
+      // Increment frame slowly for a gentle idle rotation
+      const nextFrame = (currentFrameRef.current + 1) % frameCount;
+      currentFrameRef.current = nextFrame;
+      renderFrame(nextFrame);
+    }, 45); // Smooth idle rotation speed
 
-        {/* Text */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-neonCyan font-outfit tracking-widest mb-3 text-sm"
-        >
-          WELCOME TO MY UNIVERSE
-        </motion.p>
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="text-4xl font-bold text-white leading-tight mb-4"
-        >
-          I build <span className="text-transparent bg-clip-text bg-gradient-to-r from-neonCyan to-neonPurple">digital realities</span>.
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="text-lightGrey text-base max-w-sm mx-auto mb-10"
-        >
-          Full-Stack Software Engineer specializing in building cutting-edge, premium web applications.
-        </motion.p>
+    return () => clearInterval(interval);
+  }, [imagesLoaded, frameCount, isDragging]);
 
-        {/* CTA Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="flex flex-col gap-4 items-center"
-        >
-          <a href="#projects" className="w-48 text-center px-8 py-3 bg-white text-black font-semibold rounded-sm hover:bg-white/90 transition-all duration-300">
-            View Work
-          </a>
-          <div className="flex gap-4">
-            <a href="https://github.com/MdKaifALam0000" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-sm border border-white/10 hover:bg-white/10 transition-all text-white"><FiGithub size={20}/></a>
-            <a href="https://www.linkedin.com/in/alam-kaif-67b443224/" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-sm border border-white/10 hover:bg-white/10 transition-all text-white"><FiLinkedin size={20}/></a>
-            <a href="mailto:alam.kaif9430@gmail.com" className="p-3 bg-white/5 rounded-sm border border-white/10 hover:bg-white/10 transition-all text-white"><FiMail size={20}/></a>
-          </div>
-        </motion.div>
-      </section>
-    );
-  }
+  // 4. Drag & Swipe Interaction Handlers
+  const handleDragStart = (clientX) => {
+    isInteractedRef.current = true;
+    setIsDragging(true);
+    dragStartRef.current = clientX;
+    frameStartRef.current = currentFrameRef.current;
+  };
 
-  // ─── DESKTOP HERO: Full canvas + GSAP cinematic experience ────────────────
+  const handleDragMove = (clientX) => {
+    if (!isDragging || frameCount === 0) return;
+    const deltaX = clientX - dragStartRef.current;
+    
+    // Control rotation sensitivity (pixels dragged per frame shift)
+    const sensitivity = 8;
+    const frameOffset = Math.round(deltaX / sensitivity);
+    
+    let targetFrame = (frameStartRef.current - frameOffset) % frameCount;
+    if (targetFrame < 0) {
+      targetFrame = frameCount + targetFrame;
+    }
+    
+    currentFrameRef.current = targetFrame;
+    renderFrame(targetFrame);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Reset interaction timer after 5 seconds of inactivity to resume idle rotation
+  useEffect(() => {
+    if (!isInteractedRef.current) return;
+    
+    const timeout = setTimeout(() => {
+      isInteractedRef.current = false;
+    }, 8000); // 8s of inactivity resumes idle spin
+    
+    return () => clearTimeout(timeout);
+  }, [isDragging, currentFrameRef.current]);
+
   return (
     <section 
       id="hero" 
       ref={containerRef} 
-      className="relative w-full h-screen overflow-hidden bg-black"
+      className="relative w-full min-h-screen overflow-hidden bg-carBg flex items-center justify-center pt-20 md:pt-0"
     >
-      {/* 1. CINEMATIC CANVAS BACKGROUND */}
-      <div className="absolute inset-0 w-full h-full z-0 flex items-center justify-center opacity-40 mix-blend-screen pointer-events-none">
-        <canvas 
-          ref={canvasRef} 
-          className="w-full h-full object-cover"
-        />
-        {/* Subtle grid/gradient overlay for depth */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black pointer-events-none"></div>
-      </div>
+      {/* Loading overlay for image frames */}
+      {!imagesLoaded && (
+        <div className="absolute inset-0 bg-carBg z-50 flex flex-col items-center justify-center gap-4">
+          <div className="relative w-24 h-24">
+            <div className="absolute inset-0 rounded-full border-2 border-carRed/10" />
+            <div className="absolute inset-0 rounded-full border-2 border-carRed border-t-transparent animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center text-xs font-outfit text-white font-extrabold tracking-wider">
+              {Math.round((loadedCountState / Math.max(frameCount, 1)) * 100)}%
+            </div>
+          </div>
+          <p className="text-carGold/80 text-xs uppercase tracking-widest font-bold animate-pulse">Loading Portfolio...</p>
+        </div>
+      )}
 
-      {/* 2. FOREGROUND CONTENT */}
-      <div className="relative z-10 w-full h-full max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 items-center">
+      {/* Hero Content Container */}
+      <div className="w-full max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10 py-12 md:py-24">
         
-        {/* Left Col: Text Swap Container */}
-        <div className="relative h-64 flex flex-col justify-center [perspective:1000px]">
+        {/* Left Column: Typographic Showcase (5 cols on lg) */}
+        <div className="lg:col-span-5 flex flex-col justify-center text-center lg:text-left min-h-[400px] md:min-h-[450px]">
           
-          {/* Phase 1 Text */}
-          <div ref={text1Ref} className="absolute left-0 w-full">
-            <p className="text-neonCyan font-outfit tracking-widest mb-4">WELCOME TO MY UNIVERSE</p>
-            <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight">
-              I build <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-neonCyan to-neonPurple">digital realities</span>.
-            </h1>
-            <p className="text-lightGrey mt-6 max-w-md text-lg">
-              Full-Stack Software Engineer specializing in building cutting-edge, 
-              premium web applications.
-            </p>
-          </div>
-
-          {/* Phase 2 Text */}
-          <div ref={text2Ref} className="absolute left-0 w-full hidden opacity-0 text-white">
-            <h2 className="text-5xl md:text-7xl font-bold leading-tight">
-              Crafting <br/>
-              <span className="text-neonPurple italic">immersive</span> <br/>
-              experiences.
-            </h2>
-          </div>
-
-          {/* Phase 3 Text */}
-          <div ref={text3Ref} className="absolute left-0 w-full hidden opacity-0 text-white">
-            <h2 className="text-5xl md:text-7xl font-bold leading-tight">
-              Building <br/>
-              <span className="text-neonCyan">intelligent</span> <br/>
-              systems.
-            </h2>
-          </div>
-
-          {/* Fixed CTA Buttons that persist for most of scroll */}
-          <div ref={ctaRef} className="absolute bottom-[-80px] left-0 flex gap-6 items-center">
-            <a href="#projects" className="px-8 py-3 bg-white text-black font-semibold rounded-sm hover:bg-white/90 transition-all duration-300">
-              View Work
-            </a>
-            <div className="flex gap-4 items-center">
-              <a href="https://github.com/MdKaifALam0000" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-sm border border-white/10 hover:bg-white/10 hover:text-white transition-all"><FiGithub size={20} className="text-lightGrey"/></a>
-              <a href="https://www.linkedin.com/in/alam-kaif-67b443224/" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-sm border border-white/10 hover:bg-white/10 hover:text-white transition-all"><FiLinkedin size={20} className="text-lightGrey"/></a>
-              <a href="mailto:alam.kaif9430@gmail.com" className="p-3 bg-white/5 rounded-sm border border-white/10 hover:bg-white/10 hover:text-white transition-all"><FiMail size={20} className="text-lightGrey"/></a>
+          {/* Dedicated height-managed container for text phases */}
+          <div className="relative w-full min-h-[300px] md:min-h-[340px]">
+            
+            {/* Phase 1 Text */}
+            <div ref={text1Ref} className="absolute inset-0 flex flex-col justify-center items-center lg:items-start transition-opacity duration-300">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-carRed/20 bg-carRed/5 text-carRed text-xs uppercase tracking-widest font-extrabold mb-6 animate-fade-in mx-auto lg:mx-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-carRed animate-pulse"></span>
+                Full-Stack Developer
+              </div>
+              <h1 className="text-4xl md:text-6xl font-black text-white leading-[1.1] mb-6 font-outfit">
+                I build <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-carRed via-carRose to-carGold">modern web apps</span>.
+              </h1>
+              <p className="text-lightGrey max-w-md text-base md:text-lg leading-relaxed mx-auto lg:mx-0">
+                A full-stack software engineer crafting responsive, high-performance web applications. Blending robust backend architecture with intuitive, interactive user interfaces.
+              </p>
             </div>
-          </div>
-        </div>
 
-        {/* Right Col: Profile Frame */}
-        <div className="flex items-center justify-center h-full hidden lg:flex">
+            {/* Phase 2 Text */}
+            <div ref={text2Ref} className="absolute inset-0 hidden opacity-0 flex-col justify-center items-center lg:items-start text-white transition-opacity duration-300">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-carGold/20 bg-carGold/5 text-carGold text-xs uppercase tracking-widest font-extrabold mb-6 mx-auto lg:mx-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-carGold animate-pulse"></span>
+                Frontend Experience
+              </div>
+              <h2 className="text-4xl md:text-6xl font-black leading-[1.1] mb-6 font-outfit">
+                Responsive and <br />
+                <span className="text-carRed italic">interactive</span> <br />
+                user interfaces.
+              </h2>
+              <p className="text-lightGrey max-w-md text-base md:text-lg leading-relaxed mx-auto lg:mx-0">
+                Focusing on clean design, micro-interactions, and modern layout aesthetics that provide seamless user experiences.
+              </p>
+            </div>
+
+            {/* Phase 3 Text */}
+            <div ref={text3Ref} className="absolute inset-0 hidden opacity-0 flex-col justify-center items-center lg:items-start text-white transition-opacity duration-300">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-carRose/20 bg-carRose/5 text-carRose text-xs uppercase tracking-widest font-extrabold mb-6 mx-auto lg:mx-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-carRose animate-pulse"></span>
+                Backend Development
+              </div>
+              <h2 className="text-4xl md:text-6xl font-black leading-[1.1] mb-6 font-outfit">
+                Scalable and <br />
+                <span className="text-carGold">secure</span> <br />
+                backend systems.
+              </h2>
+              <p className="text-lightGrey max-w-md text-base md:text-lg leading-relaxed mx-auto lg:mx-0">
+                Structuring database environments and fast server APIs using Node.js, Express, and MongoDB to deliver robust performance.
+              </p>
+            </div>
+
+          </div>
+
+          {/* CTA & Socials */}
           <div 
-            ref={profileRef}
-            className="relative w-80 h-[400px] rounded-sm border border-white/10 p-2 flex items-center justify-center bg-white/5 backdrop-blur-sm"
+            ref={ctaRef} 
+            className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-center lg:justify-start w-full"
           >
-            {/* Image Mask */}
-            <div className="w-full h-full relative rounded-sm overflow-hidden bg-black object-cover z-20">
-              <img 
-                src={myPhoto} 
-                alt="Profile" 
-                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500 absolute top-0 left-0"
-              />
+            <a 
+              href="#projects" 
+              className="px-8 py-3.5 bg-carRed hover:bg-carRed/90 text-white text-xs uppercase tracking-widest font-extrabold rounded-full transition-all duration-300 shadow-[0_4px_20px_rgba(181,50,55,0.4)] flex items-center gap-2 group"
+            >
+              View Projects
+              <FiNavigation size={12} className="transform group-hover:translate-x-1 group-hover:-translate-y-0.5 transition-transform" />
+            </a>
+            
+            <div className="flex gap-3">
+              <a 
+                href="https://github.com/MdKaifALam0000" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="p-3 bg-white/5 rounded-full border border-white/10 hover:border-carRed hover:bg-carRed/10 hover:text-white transition-all duration-300"
+              >
+                <FiGithub size={16} className="text-lightGrey hover:text-white" />
+              </a>
+              <a 
+                href="https://www.linkedin.com/in/alam-kaif-67b443224/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="p-3 bg-white/5 rounded-full border border-white/10 hover:border-carRed hover:bg-carRed/10 hover:text-white transition-all duration-300"
+              >
+                <FiLinkedin size={16} className="text-lightGrey hover:text-white" />
+              </a>
+              <a 
+                href="mailto:alam.kaif9430@gmail.com" 
+                className="p-3 bg-white/5 rounded-full border border-white/10 hover:border-carRed hover:bg-carRed/10 hover:text-white transition-all duration-300"
+              >
+                <FiMail size={16} className="text-lightGrey hover:text-white" />
+              </a>
             </div>
           </div>
         </div>
+
+        {/* Right Column: Dynamic Car Showcase Stage (7 cols on lg) */}
+        <div className="lg:col-span-7 flex flex-col items-center justify-center w-full mt-8 lg:mt-0 select-none">
+          <div className="relative w-full max-w-[640px] aspect-[16/10] flex items-center justify-center">
+            
+            {/* Showroom Platform Stage Background Glow */}
+            <div className="absolute inset-0 bg-gradient-to-t from-carRed/15 via-transparent to-transparent opacity-70 rounded-full blur-2xl pointer-events-none" />
+            
+            {/* The Active Showcase Canvas */}
+            <canvas 
+              ref={canvasRef} 
+              className="w-full h-full object-contain z-10 filter drop-shadow-[0_20px_35px_rgba(181,50,55,0.4)] transition-all duration-300 cursor-grab"
+              onMouseDown={(e) => handleDragStart(e.clientX)}
+              onMouseMove={(e) => handleDragMove(e.clientX)}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleDragEnd}
+              onTouchStart={(e) => handleDragStart(e.touches[0].clientX)}
+              onTouchMove={(e) => handleDragMove(e.touches[0].clientX)}
+              onTouchEnd={handleDragEnd}
+              style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+            />
+
+            {/* Showroom mirror platform baseline */}
+            <div className="absolute bottom-[6%] w-[90%] h-[16px] bg-black/85 blur-[4px] rounded-full z-0 border-t border-carRed/20 shadow-[0_-4px_16px_rgba(181,50,55,0.45)]"></div>
+            <div className="absolute bottom-[5.5%] w-[75%] h-[4px] bg-gradient-to-r from-transparent via-carGold/30 to-transparent z-0 opacity-80 blur-[1px]"></div>
+
+            {/* Micro Interaction Instruction Badge */}
+            <div className="absolute bottom-4 bg-black/85 border border-carGold/20 text-carGold px-3.5 py-1 rounded-full text-[9px] uppercase tracking-widest z-20 flex items-center gap-2 select-none pointer-events-none font-bold shadow-lg">
+              <span className="w-1.5 h-1.5 rounded-full bg-carRed animate-pulse"></span>
+              Drag or Scroll to rotate 3D view
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
   );

@@ -7,11 +7,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        darkBg: "#030014",     // Super deep dark for premium feel
-        darkCard: "#0a0726",
-        lightGrey: "#a8b2d1",
-        neonCyan: "#00f0ff",
-        neonPurple: "#7000ff",
+        darkBg: "#07080b",     // Deep night black/grey
+        darkCard: "#10131a",   // Slate card bg
+        lightGrey: "#8e9aa8",  // Cool slate-grey text
+        neonCyan: "#e04646",   // Mapped to vibrant red
+        neonPurple: "#e8a838", // Mapped to amber gold
+        carBg: "#07080b",
+        carPlum: "#10131a",
+        carRed: "#e04646",
+        carGold: "#e8a838",
+        carRose: "#649cc4",
+        textWarm: "#e2e8f0",
       },
       fontFamily: {
         outfit: ['Outfit', 'sans-serif'],

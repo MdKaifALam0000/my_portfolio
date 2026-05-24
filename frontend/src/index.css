@@ -31,14 +31,61 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #030014; 
+  background: #07080b; 
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1a1543; 
+  background: #1c2331; 
   border-radius: 5px;
+  border: 2px solid #07080b;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #7000ff; 
+  background: #e04646; 
+}
+
+/* Premium SaaS Grid Overlay */
+.saas-grid {
+  background-size: 50px 50px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+}
+
+/* Spotlight Card border animation utilities */
+.spotlight-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: radial-gradient(
+    800px circle at var(--mouse-x, 0) var(--mouse-y, 0),
+    rgba(224, 70, 70, 0.25),
+    transparent 40%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 0.5s ease;
+}
+
+.spotlight-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 0) var(--mouse-y, 0),
+    rgba(224, 70, 70, 0.04),
+    transparent 40%
+  );
+  pointer-events: none;
+  z-index: 0;
 }

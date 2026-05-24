@@ -1,41 +1,76 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 
 const CustomCursor = () => {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [hovered, setHovered] = useState(false);
+  const cursorX = useMotionValue(-100);
+  const cursorY = useMotionValue(-100);
+
+  // Spring physics for smooth delay-follow effect on the outer ring
+  const springConfig = { damping: 30, stiffness: 350, mass: 0.4 };
+  const cursorXSpring = useSpring(cursorX, springConfig);
+  const cursorYSpring = useSpring(cursorY, springConfig);
 
   useEffect(() => {
-    const updateMousePosition = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
+    const moveCursor = (e) => {
+      cursorX.set(e.clientX);
+      cursorY.set(e.clientY);
     };
 
-    window.addEventListener('mousemove', updateMousePosition);
-    return () => window.removeEventListener('mousemove', updateMousePosition);
-  }, []);
+    const handleMouseOver = (e) => {
+      const target = e.target;
+      const isClickable = 
+        target.tagName === 'A' || 
+        target.tagName === 'BUTTON' || 
+        target.closest('a') || 
+        target.closest('button') || 
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' ||
+        target.classList.contains('cursor-pointer') ||
+        target.closest('.cursor-pointer');
+      
+      setHovered(!!isClickable);
+    };
 
-  const variants = {
-    default: {
-      x: mousePosition.x - 16,
-      y: mousePosition.y - 16,
-      transition: {
-        type: 'spring',
-        mass: 0.1,
-        stiffness: 800,
-        damping: 40,
-      }
-    }
-  };
+    window.addEventListener('mousemove', moveCursor);
+    window.addEventListener('mouseover', handleMouseOver);
+    return () => {
+      window.removeEventListener('mousemove', moveCursor);
+      window.removeEventListener('mouseover', handleMouseOver);
+    };
+  }, [cursorX, cursorY]);
 
   return (
     <>
+      {/* Outer follow ring */}
       <motion.div
-        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-neonCyan pointer-events-none z-[100] mix-blend-difference hidden md:block"
-        variants={variants}
-        animate="default"
+        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-carGold pointer-events-none z-[100] hidden md:block"
+        style={{
+          x: cursorXSpring,
+          y: cursorYSpring,
+          translateX: '-50%',
+          translateY: '-50%',
+        }}
+        animate={{
+          scale: hovered ? 1.6 : 1,
+          borderColor: hovered ? '#b53237' : '#cdc19e',
+          backgroundColor: hovered ? 'rgba(181, 50, 55, 0.1)' : 'rgba(0, 0, 0, 0)',
+        }}
+        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
       />
-      <div 
-        className="fixed top-0 left-0 w-2 h-2 rounded-full bg-neonPurple pointer-events-none z-[100] hidden md:block"
-        style={{ left: mousePosition.x - 4, top: mousePosition.y - 4 }}
+      {/* Inner precise dot */}
+      <motion.div 
+        className="fixed top-0 left-0 w-2 h-2 rounded-full bg-carRed pointer-events-none z-[100] hidden md:block"
+        style={{
+          x: cursorX,
+          y: cursorY,
+          translateX: '-50%',
+          translateY: '-50%',
+        }}
+        animate={{
+          scale: hovered ? 0.6 : 1,
+          backgroundColor: hovered ? '#cdc19e' : '#b53237',
+        }}
       />
     </>
   );
